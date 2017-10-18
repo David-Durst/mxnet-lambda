@@ -10,6 +10,8 @@ import boto3
 import json
 import tempfile
 import urllib2 
+import urllib
+from urllib import urlretrieve
 
 import mxnet as mx
 import numpy as np
@@ -21,19 +23,15 @@ Batch = namedtuple('Batch', ['data'])
 f_params = 'resnet-18-0000.params'
 f_symbol = 'resnet-18-symbol.json'
     
-print("a1")
 #params
 f_params_file = tempfile.NamedTemporaryFile()
+urlretrieve("http://data.dmlc.ml/mxnet/models/imagenet/resnet/18-layers/resnet-18-0000.params", f_params_file.name)
 f_params_file.flush()
-print("a2")
-os.system("wget http://data.dmlc.ml/mxnet/models/imagenet/resnet/18-layers/resnet-18-0000.params -O " + f_params_file.name)
-print("a3")
 
 #symbol
 f_symbol_file = tempfile.NamedTemporaryFile()
+urlretrieve("http://data.dmlc.ml/mxnet/models/imagenet/resnet/18-layers/resnet-18-symbol.json", f_symbol_file.name)
 f_symbol_file.flush()
-s3_client.download_file(bucket, f_symbol, )
-os.system("wget http://data.dmlc.ml/mxnet/models/imagenet/resnet/18-layers/resnet-18-symbol.json -O " + f_symbol_file.name)
 
 def load_model(s_fname, p_fname):
     """
@@ -61,6 +59,7 @@ def predict(url, mod, synsets):
     predict labels for a given image
     '''
 
+    print("a")
     req = urllib2.urlopen(url)
     img_file = tempfile.NamedTemporaryFile()
     img_file.write(req.read())
@@ -71,7 +70,8 @@ def predict(url, mod, synsets):
     # PIL conversion
     #size = 224, 224
     #img = img.resize((224, 224), Image.ANTIALIAS)
-   
+    
+    print("b") 
     # center crop and resize
     # ** width, height must be greater than new_width, new_height 
     new_width, new_height = 224, 224
@@ -81,6 +81,7 @@ def predict(url, mod, synsets):
     right = (width + new_width)/2
     bottom = (height + new_height)/2
 
+    print("c") 
     img = img.crop((left, top, right, bottom))
     # convert to numpy.ndarray
     sample = np.asarray(img)
@@ -89,9 +90,16 @@ def predict(url, mod, synsets):
     img = np.swapaxes(sample, 1, 2)
     img = img[np.newaxis, :] 
  
+    print("d") 
+    print(img.size)
+    print("d1")
+    print(mx.nd.array(img))
+    print("d2")
     # forward pass through the network
     mod.forward(Batch([mx.nd.array(img)]))
+    print("e") 
     prob = mod.get_outputs()[0].asnumpy()
+    print("f") 
     prob = np.squeeze(prob)
     a = np.argsort(prob)[::-1]
     out = '' 
@@ -118,11 +126,17 @@ def lambda_handler(event, context):
         # direct invocation
         url = event['url']
     
+    print("1")
     sym, arg_params, aux_params = load_model(f_symbol_file.name, f_params_file.name)
-    mod = mx.mod.Module(symbol=sym)
-    mod.bind(for_training=False, data_shapes=[('data', (1,3,224,224))])
-    mod.set_params(arg_params, aux_params)
+    print("2")
+    mod = mx.mod.Module(symbol=sym, label_names=None)
+    print("3")
+    mod.bind(for_training=False, data_shapes=[('data', (1,3,224,224))], label_shapes=mod._label_shapes)
+    print("4")
+    mod.set_params(arg_params, aux_params, allow_missing=True)
+    print("5")
     labels = predict(url, mod, synsets)
+    print("6")
     
     out = {
             "headers": {
