@@ -21,19 +21,19 @@ Batch = namedtuple('Batch', ['data'])
 f_params = 'resnet-18-0000.params'
 f_symbol = 'resnet-18-symbol.json'
     
-bucket = 'smallya-test'
-s3 = boto3.resource('s3')
-s3_client = boto3.client('s3')
-
+print("a1")
 #params
 f_params_file = tempfile.NamedTemporaryFile()
-s3_client.download_file(bucket, f_params, f_params_file.name)
 f_params_file.flush()
+print("a2")
+os.system("wget http://data.dmlc.ml/mxnet/models/imagenet/resnet/18-layers/resnet-18-0000.params -O " + f_params_file.name)
+print("a3")
 
 #symbol
 f_symbol_file = tempfile.NamedTemporaryFile()
-s3_client.download_file(bucket, f_symbol, f_symbol_file.name)
 f_symbol_file.flush()
+s3_client.download_file(bucket, f_symbol, )
+os.system("wget http://data.dmlc.ml/mxnet/models/imagenet/resnet/18-layers/resnet-18-symbol.json -O " + f_symbol_file.name)
 
 def load_model(s_fname, p_fname):
     """
