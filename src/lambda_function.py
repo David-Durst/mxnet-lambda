@@ -11,6 +11,7 @@ import json
 import tempfile
 import urllib2 
 import urllib
+import time
 from urllib import urlretrieve
 
 import mxnet as mx
@@ -98,6 +99,16 @@ def predict(url, mod, synsets):
     # forward pass through the network
     mod.forward(Batch([mx.nd.array(img)]))
     print("e") 
+    print(mod.get_outputs())
+    print("e1")
+    print(mod.get_outputs()[0])
+    time.sleep(0.3)
+    print("e2")
+    #try:
+    #    return mod.get_outputs()[0].asnumpy()
+    #except Exception as e:
+    #    return {"body": str(e)}
+    print("e3")
     prob = mod.get_outputs()[0].asnumpy()
     print("f") 
     prob = np.squeeze(prob)
